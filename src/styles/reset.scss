@@ -1,0 +1,110 @@
+/* Use more intuitive box-sizing model everywhere */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Remove default padding and margin from everything */
+* {
+  padding: 0;
+  margin: 0;
+}
+
+/* Remove borders and set sensible defaults for backgrounds
+ * Excludes a couple elements that want their styles preserved */
+*:where(:not(progress, meter)) {
+  border-width: 0;
+  border-style: solid;
+  background-origin: border-box;
+  background-repeat: no-repeat;
+}
+
+:root {
+  /* Allow percentage-based heights in the application */
+  height: 100%;
+}
+
+body {
+  /* At least fill the height of the window */
+  min-height: 100%;
+}
+
+/* Improve media defaults */
+:where(img, svg, video, canvas, audio, iframe, embed, object) {
+  display: block;
+}
+:where(img, video, audio) {
+  width: auto;
+  max-width: 100%;
+}
+:where(svg):where(:not([width])) {
+  width: 5rem;
+}
+
+/* Remove built-in form typography styles */
+:where(input, button, textarea, select),
+:where(input[type="file"])::-webkit-file-upload-button,
+:where(input[type="file"])::file-selector-button {
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  outline: none;
+  box-shadow: none;
+}
+
+/* Change textarea resize to vertical-only */
+:where(textarea) {
+  resize: vertical;
+}
+
+/* Make it clear interactive elements are interactive */
+:where(a[href], button, select, input[type="button"], input[type="submit"], input[type="reset"]),
+:where(input[type="file"])::-webkit-file-upload-button,
+:where(input[type="file"])::file-selector-button {
+  cursor: pointer;
+  touch-action: manipulation; /* Removes delay between tap and effect */
+}
+
+/* Make sure users can’t select button text */
+:where(button, button[type], input[type="button"], input[type="submit"], input[type="reset"]),
+:where(input[type="file"])::-webkit-file-upload-button,
+:where(input[type="file"])::file-selector-button {
+  -webkit-tap-highlight-color: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  text-align: center;
+}
+
+/* Disabled cursor for disabled buttons */
+:where(button, button[type], input[type="button"], input[type="submit"], input[type="reset"])[disabled] {
+  cursor: not-allowed;
+}
+
+/* Reset autofill styles (requires individual inputs to set --background-color, --text-color, and --caret-color for full functionality) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 60px var(--background-color, #ffffff) inset !important;
+  background-color: var(--background-color, #ffffff) !important;
+  color: var(--text-color, #000000) !important;
+  -webkit-text-fill-color: var(--text-color, #000000) !important;
+  background-clip: content-box !important;
+  caret-color: var(--caret-color, #000000) !important;
+}
+
+/* Hide spin buttons on number inputs */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance:textfield;
+}
+
+dialog {
+  margin: auto;
+}
