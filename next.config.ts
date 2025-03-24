@@ -1,7 +1,5 @@
 import type { NextConfig } from 'next';
-import type { Configuration } from 'webpack';
-
-import path from 'path';
+import path from 'node:path';
 
 
 export default {
@@ -12,11 +10,6 @@ export default {
       path.join(__dirname, 'src/'),
       path.join(__dirname, 'node_modules/'),
     ],
-  },
-
-  webpack: (config: Configuration) => {
-    config.node = { __dirname: true };
-    return config;
   },
 
   experimental: {
