@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -15,10 +15,17 @@ mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 declare global { interface Window { map?: mapboxgl.Map; } }
 
 
-export default function MapboxMap() {
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const mapContainerRef = (node: HTMLDivElement) => {
-    mapRef.current = new mapboxgl.Map({
+export default function MapboxMap({
+  onLoad = undefined,
+}: {
+  onLoad?: (map: mapboxgl.Map) => () => void;
+}) {
+  // holds the mapboxgl.Map instance
+  const [map, setMap] = useState<mapboxgl.Map | null>(null);
+
+  // callback ref to initialize the map within the container div
+  const mapContainerRef = useCallback((node: HTMLDivElement) => {
+    const m = new mapboxgl.Map({
       container: node,
       bounds: [
         { lng: -73.900, lat: 40.822 },
@@ -31,14 +38,28 @@ export default function MapboxMap() {
         },
       },
     });
-    window.map = mapRef.current;
+    setMap(m);
+    window.map = m;
 
-    mapRef.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+    return () => { m.remove(); };
+  }, []);
 
-    return () => { mapRef.current?.remove(); };
-  };
 
-  return (
-    <div className={cx('base')} ref={mapContainerRef} />
-  );
+  // Run onLoad
+  useEffect(() => {
+    if (!map || !onLoad) return;
+    // run the provided onLoad function at the appropriate time
+    let cleanup = () => {};
+    const cb = () => { cleanup = onLoad(map); };
+    if (map._loaded) cb();
+    else map.on('load', cb);
+    // cleanup after
+    return () => {
+      map.off('load', cb);
+      if (!map._removed) cleanup();
+    };
+  }, [map, onLoad]);
+
+
+  return <div className={cx('base')} ref={mapContainerRef} />;
 }
