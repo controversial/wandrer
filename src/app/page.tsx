@@ -4,13 +4,11 @@ import React, { useCallback } from 'react';
 import type { Map as MapboxInstance } from 'mapbox-gl';
 
 import MapboxMap from 'components/Map';
+import { WANDRER_USER_ID } from '../constants';
 
 import classNames from 'classnames/bind';
 import styles from './page.module.scss';
 const cx = classNames.bind(styles);
-
-
-const WANDRER_USER_ID = '153931';
 
 
 export default function Page() {
