@@ -20,8 +20,6 @@ export default {
   },
 
   experimental: {
-    typedRoutes: true,
-
     webpackBuildWorker: true,
     parallelServerCompiles: true,
     parallelServerBuildTraces: true,
