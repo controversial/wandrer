@@ -33,8 +33,9 @@ export default function MapboxMap({
       ],
       config: {
         basemap: {
-          showPointOfInterestLabels: false,
           theme: 'faded',
+          showPointOfInterestLabels: false,
+          showTransitLabels: false,
         },
       },
     });

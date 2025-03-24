@@ -23,7 +23,7 @@ export default function RootLayout({
 }
 
 export const metadata = {
-  title: 'Next app',
+  title: 'Luke’s Wandrer',
 } satisfies Metadata;
 
 export const viewport = {
