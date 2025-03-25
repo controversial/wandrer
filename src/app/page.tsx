@@ -4,18 +4,20 @@ import React from 'react';
 import type { Map as MapboxInstance } from 'mapbox-gl';
 
 import MapboxMap from 'components/Map';
-import { WANDRER_USER_ID } from '../constants';
 
 import classNames from 'classnames/bind';
 import styles from './page.module.scss';
 const cx = classNames.bind(styles);
+
+if (!process.env.NEXT_PUBLIC_WANDRER_ATHLETE_ID) throw new Error('Missing athlete ID');
+const WANDRER_ATHLETE_ID = process.env.NEXT_PUBLIC_WANDRER_ATHLETE_ID;
 
 
 function setupMap(map: MapboxInstance) {
   // used for “traveled” segments; supports CORS
   map.addSource('wandrer-1', {
     type: 'vector',
-    tiles: [`https://tiles2.wandrer.earth/tiles/${WANDRER_USER_ID}/bike/{z}/{x}/{y}`],
+    tiles: [`https://tiles2.wandrer.earth/tiles/${WANDRER_ATHLETE_ID}/bike/{z}/{x}/{y}`],
     maxzoom: 13,
   });
   // used for “untraveled” segments; proxied through an API route due to no CORS support

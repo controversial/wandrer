@@ -1,7 +1,8 @@
-import { WANDRER_USER_ID } from '../../../constants';
 import { wandrerAuthedFetch } from '../wandrer-session';
 
-const DATA_URL = `https://wandrer.earth/athletes/${WANDRER_USER_ID}/tile_data`;
+if (!process.env.NEXT_PUBLIC_WANDRER_ATHLETE_ID) throw new Error('Missing athlete ID');
+const WANDRER_ATHLETE_ID = process.env.NEXT_PUBLIC_WANDRER_ATHLETE_ID;
+const DATA_URL = `https://wandrer.earth/athletes/${WANDRER_ATHLETE_ID}/tile_data`;
 
 
 export async function GET(): Promise<Response> {

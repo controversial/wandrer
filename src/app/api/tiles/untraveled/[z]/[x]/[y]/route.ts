@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
-import { WANDRER_USER_ID } from '../../../../../../../constants';
+
+if (!process.env.NEXT_PUBLIC_WANDRER_ATHLETE_ID) throw new Error('Missing athlete ID');
+const WANDRER_ATHLETE_ID = process.env.NEXT_PUBLIC_WANDRER_ATHLETE_ID;
 
 export async function GET(
   req: NextRequest,
@@ -13,7 +15,7 @@ export async function GET(
     return new Response('Invalid parameters', { status: 400 });
   }
 
-  const tileUrl = `https://wandrer.earth/tiles/m2/${WANDRER_USER_ID}/bike/${z}/${x}/${y}?f=1`;
+  const tileUrl = `https://wandrer.earth/tiles/m2/${WANDRER_ATHLETE_ID}/bike/${z}/${x}/${y}?f=1`;
   const r = await fetch(tileUrl);
   return new Response(r.body);
 }
