@@ -30,10 +30,10 @@ async function handleResponseCookies(response: Response) {
 
 /** Get a signed-in session ID that we’ve stored in redis */
 async function getStoredSession() {
-  const storedToken = await redis.get(SESSION_REDIS_KEY);
-  if (typeof storedToken !== 'string' || !storedToken.length) return undefined;
+  const storedSession = await redis.get(SESSION_REDIS_KEY);
+  if (typeof storedSession !== 'string' || !storedSession.length) return undefined;
   console.log('[session] using stored session');
-  return storedToken;
+  return storedSession;
 }
 
 /** Sign in to Wandrer using username/password to establish a session */
@@ -86,14 +86,27 @@ export async function wandrerAuthedFetch(
   url: string,
   init: RequestInit = {},
 ) {
-  // Create an authenticated request with the session cookie
-  const session = await getWandrerSession();
-  const request = new Request(url, init);
-  const requestCookies = new RequestCookies(request.headers);
-  requestCookies.set(SESSION_COOKIE_NAME, session);
+  async function fetchWithSession(session: string, retry = true) {
+    // Construct the request using the given session cookie
+    const request = new Request(url, init);
+    const requestCookies = new RequestCookies(request.headers);
+    requestCookies.set(SESSION_COOKIE_NAME, session);
+    // Send the request
+    const response = await fetch(request);
+    // Handle a first rejection by retrying with a new session
+    const isSigninRedirect = (response.redirected && response.url.endsWith('/signin'))
+      || (response.status === 302 && response.headers.get('location')?.endsWith('/signin'));
+    if (isSigninRedirect) {
+      console.warn('[session] Wandrer session was rejected');
+      await redis.del(SESSION_REDIS_KEY);
+      if (!retry) throw new Error('Session was rejected');
+      return fetchWithSession(await establishNewSession(), false);
+    }
+    return response;
+  }
 
   // Make the request
-  const response = await fetch(request);
+  const response = await fetchWithSession(await getWandrerSession());
 
   // Update stored session from the response
   await handleResponseCookies(response);
