@@ -2,7 +2,7 @@
 
 import React, { useEffect, useCallback, useState } from 'react';
 
-import mapboxgl from 'mapbox-gl';
+import mapboxgl, { type LayerSpecification, type SourceSpecification } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 import classNames from 'classnames/bind';
@@ -16,9 +16,11 @@ declare global { interface Window { map?: mapboxgl.Map; } }
 
 
 export default function MapboxMap({
-  onLoad = undefined,
+  sources = [],
+  layers = [],
 }: {
-  onLoad?: (map: mapboxgl.Map) => () => void;
+  sources?: ({ id: string } & SourceSpecification)[];
+  layers?: LayerSpecification[];
 }) {
   // holds the mapboxgl.Map instance
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
@@ -45,21 +47,47 @@ export default function MapboxMap({
     return () => { m.remove(); };
   }, []);
 
+  const url = (partial: string) => {
+    if (typeof window === 'undefined') throw new Error('url is client-only');
+    const fullUrl = new URL(partial, window.location.origin).href;
+    return fullUrl.replace(/%7B([a-zA-Z0-9_]+)%7D/g, '{$1}'); // unescape curly parameters like {x}
+  };
 
-  // Run onLoad
   useEffect(() => {
-    if (!map || !onLoad) return;
-    // run the provided onLoad function at the appropriate time
+    if (!map || sources.length === 0) return;
     let cleanup = () => {};
-    const cb = () => { cleanup = onLoad(map); };
+    // Add sources
+    const cb = () => {
+      sources.forEach((source) => {
+        map.addSource(source.id, {
+          ...source,
+          // expand relative URLs
+          ...'tiles' in source && { tiles: source.tiles?.map((tile) => url(tile)) },
+        });
+      });
+
+      // Add layers
+      layers.forEach((layer) => { map.addLayer(layer); });
+
+      cleanup = () => {
+        // remove layers
+        layers.forEach((layer) => {
+          if (!map._removed) { map.removeLayer(layer.id); }
+        });
+        // remove sources
+        sources.forEach((source) => {
+          if (!map._removed) { map.removeSource(source.id); }
+        });
+      };
+    };
     if (map._loaded) cb();
     else map.on('load', cb);
-    // cleanup after
+
     return () => {
       map.off('load', cb);
-      if (!map._removed) cleanup();
+      cleanup();
     };
-  }, [map, onLoad]);
+  });
 
 
   return <div className={cx('base')} ref={mapContainerRef} />;
