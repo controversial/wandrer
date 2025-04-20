@@ -1,6 +1,10 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useMemo, useEffect } from 'react';
 
 import MapboxMap from 'components/Map';
+import { readTileData } from './data';
+import type { LayerSpecification } from 'mapbox-gl';
 
 import classNames from 'classnames/bind';
 import styles from './page.module.scss';
@@ -11,10 +15,26 @@ const WANDRER_ATHLETE_ID = process.env.NEXT_PUBLIC_WANDRER_ATHLETE_ID;
 
 
 export default function Page() {
+  // Fetch date data
+  const [timestamps, setTimestamps] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    const ac = new AbortController();
+    fetch('/api/tile_data', { signal: ac.signal })
+      .then((res) => res.arrayBuffer())
+      .then((buf) => {
+        if (ac.signal.aborted) return;
+        setTimestamps(readTileData(buf));
+      })
+      .catch((e: unknown) => {
+        console.error('error reading tile data', e);
+      });
+    return () => { ac.abort(); };
+  }, []);
+
   return (
     <div className={cx('base')}>
       <MapboxMap
-        sources={[
+        sources={useMemo(() => [
           // used for “traveled” segments; supports CORS
           {
             id: 'wandrer-1',
@@ -29,9 +49,9 @@ export default function Page() {
             tiles: ['/api/tiles/untraveled/{z}/{x}/{y}'],
             maxzoom: 13,
           },
-        ]}
+        ], [])}
 
-        layers={[
+        layers={useMemo(() => [
           // untraveled segments in red
           {
             id: 'wandrer-untraveled',
@@ -67,7 +87,7 @@ export default function Page() {
               },
             },
           },
-        ]}
+        ] satisfies LayerSpecification[], [])}
       />
     </div>
   );
