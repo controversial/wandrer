@@ -27,7 +27,7 @@ function readTileDataInner(pbf: Pbf, end: number) {
   }, end);
 }
 
-export function readTileData(buff: ArrayBuffer) {
+export function readWandrerTileData(buff: ArrayBuffer) {
   const pbf = new Pbf(buff);
   return pbf.readFields(
     (tag, result) => {

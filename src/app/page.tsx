@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useControls, Leva } from 'leva';
 
 import MapboxMap from 'components/Map';
-import { readTileData } from './data';
+import { readWandrerTileData } from '../data/wandrer-tile-data';
 import type { SourceSpecification, LayerSpecification } from 'mapbox-gl';
 
 import classNames from 'classnames/bind';
@@ -82,13 +82,14 @@ export default function Page() {
       .then((res) => res.arrayBuffer())
       .then((buf) => {
         if (ac.signal.aborted) return;
-        setTimestamps(readTileData(buf));
+        setTimestamps(readWandrerTileData(buf));
       })
       .catch((e: unknown) => {
         console.error('error reading tile data', e);
       });
     return () => { ac.abort(); };
   }, []);
+
 
   const { traveledColor, untraveledColor } = useControls({
     traveledColor: {
