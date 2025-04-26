@@ -31,4 +31,20 @@ await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 const conn = await db.connect();
 await conn.query('INSTALL spatial; LOAD spatial;');
 
+// Make db instance and default connection available
+
 export { db, conn };
+
+// Template literal tags for performing SQL queries
+
+export async function sql(strings: TemplateStringsArray, ...values: unknown[]) {
+  if (!values.length) return conn.query(strings.join(''));
+  const stmt = await conn.prepare(strings.join(' ? '));
+  return stmt.query(...values);
+}
+
+export async function sqlStream(strings: TemplateStringsArray, ...values: unknown[]) {
+  if (!values.length) return conn.send(strings.join(''));
+  const stmt = await conn.prepare(strings.join(' ? '));
+  return stmt.send(...values);
+}
