@@ -8,6 +8,8 @@ import { readWandrerTileData } from '../data/wandrer-tile-data';
 import type { SourceSpecification, LayerSpecification } from 'mapbox-gl';
 import { extractTileFeatures } from 'data/mapbox-util';
 
+import { recordLoadedFeature } from 'data/spatial-index';
+
 import classNames from 'classnames/bind';
 import styles from './page.module.scss';
 const cx = classNames.bind(styles);
@@ -121,7 +123,11 @@ export default function Page() {
 
           if (!e.tile) return;
           const features = extractTileFeatures(e.tile, targetLayerID);
-          console.log(features);
+          const { z } = e.tile.tileID.canonical;
+          if (!features) return;
+          Promise.all(features.map((f) => (
+            recordLoadedFeature(f, e.sourceId === 'wandrer-1', z)
+          ))).catch((err: unknown) => { console.error('Error recording features', err); });
         }}
       />
 
