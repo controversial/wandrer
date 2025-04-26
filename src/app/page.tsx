@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useControls, Leva } from 'leva';
 
 import MapboxMap from 'components/Map';
 import { readTileData } from './data';
@@ -31,6 +32,19 @@ export default function Page() {
     return () => { ac.abort(); };
   }, []);
 
+  const { traveledColor, untraveledColor } = useControls({
+    traveledColor: {
+      value: '#0040ff',
+      label: 'Traveled',
+      input: 'color',
+    },
+    untraveledColor: {
+      value: '#ff6973',
+      label: 'Untraveled',
+      input: 'color',
+    },
+  });
+
   return (
     <div className={cx('base')}>
       <MapboxMap
@@ -60,12 +74,12 @@ export default function Page() {
             'source-layer': 'missing_segments',
             slot: 'middle',
             paint: {
-              'line-color': '#fa737c',
+              'line-color': untraveledColor,
               'line-occlusion-opacity': 0.3,
               'line-width': {
                 type: 'exponential',
                 base: 1.5,
-                stops: [[13, 1], [16, 3]],
+                stops: [[11, 1], [16, 4]],
               },
             },
           },
@@ -78,17 +92,19 @@ export default function Page() {
             'source-layer': 'se',
             slot: 'middle',
             paint: {
-              'line-color': '#0544ff',
+              'line-color': traveledColor,
               'line-occlusion-opacity': 0.3,
               'line-width': {
                 type: 'exponential',
                 base: 1.5,
-                stops: [[13, 1], [16, 3]],
+                stops: [[11, 1], [16, 4]],
               },
             },
           },
-        ] satisfies LayerSpecification[], [])}
+        ] satisfies LayerSpecification[], [traveledColor, untraveledColor])}
       />
+
+      <Leva collapsed />
     </div>
   );
 }
