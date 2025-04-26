@@ -17,3 +17,8 @@ declare module 'eslint-plugin-jsx-a11y' {
   };
   export { rules, flatConfigs };
 }
+
+declare module '*.wasm' {
+  const path: string;
+  export default path;
+}
