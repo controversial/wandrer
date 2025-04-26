@@ -1,4 +1,5 @@
 import { conn, sql } from './duckdb';
+import type { Feature } from 'geojson';
 
 // Core table for features that are loaded from wandrer tiles
 await conn.query(sql`
@@ -27,3 +28,24 @@ await conn.query(sql`
 await conn.query(sql`
   CREATE INDEX IF NOT EXISTS idx_segments_traveled_at ON segments_traveled_at (traveled_at);
 `);
+
+
+const insertFeatureQuery = conn.prepare(sql`
+  INSERT INTO segments (wandrer_id, geom, traveled, unpaved, recorded_at_z)
+  VALUES (?, ST_GeomFromGeoJSON(?), ?, ?, ?)
+  -- overwrite geometry when it’s loaded at a higher zoom level
+  ON CONFLICT (wandrer_id) DO UPDATE SET
+    geom = EXCLUDED.geom,
+    recorded_at_z = EXCLUDED.recorded_at_z
+  WHERE segments.recorded_at_z <= EXCLUDED.recorded_at_z;
+`);
+/** Record a feature in the database when it’s loaded from a Mapbox tile */
+export async function recordLoadedFeature(feature: Feature, traveled: boolean, tileZ: number) {
+  await (await insertFeatureQuery).query(
+    feature.id,
+    JSON.stringify(feature.geometry),
+    traveled,
+    typeof feature.properties?.unpaved === 'boolean' ? feature.properties.unpaved : false,
+    tileZ,
+  );
+}
