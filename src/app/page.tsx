@@ -6,6 +6,7 @@ import { useControls, Leva } from 'leva';
 import MapboxMap from 'components/Map';
 import { readWandrerTileData } from '../data/wandrer-tile-data';
 import type { SourceSpecification, LayerSpecification } from 'mapbox-gl';
+import { extractTileFeatures } from 'data/mapbox-util';
 
 import classNames from 'classnames/bind';
 import styles from './page.module.scss';
@@ -112,6 +113,16 @@ export default function Page() {
           () => layers({ traveledColor, untraveledColor }),
           [traveledColor, untraveledColor],
         )}
+
+        onData={(e) => {
+          if (e.dataType !== 'source') return;
+          if (e.sourceId !== 'wandrer-1' && e.sourceId !== 'wandrer-2') return;
+          const targetLayerID = { 'wandrer-1': 'se', 'wandrer-2': 'missing_segments' }[e.sourceId];
+
+          if (!e.tile) return;
+          const features = extractTileFeatures(e.tile, targetLayerID);
+          console.log(features);
+        }}
       />
 
       <Leva collapsed />
