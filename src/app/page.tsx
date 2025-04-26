@@ -4,11 +4,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useControls, Leva } from 'leva';
 
 import MapboxMap from 'components/Map';
-import { readWandrerTileData } from '../data/wandrer-tile-data';
+import { readWandrerTileData } from 'data/wandrer-tile-data';
 import type { SourceSpecification, LayerSpecification } from 'mapbox-gl';
 import { extractTileFeatures } from 'data/mapbox-util';
 
-import { recordLoadedFeature } from 'data/spatial-index';
+import spatialIndex from 'data/spatial-index';
 
 import classNames from 'classnames/bind';
 import styles from './page.module.scss';
@@ -126,7 +126,7 @@ export default function Page() {
           const { z } = e.tile.tileID.canonical;
           if (!features) return;
           Promise.all(features.map((f) => (
-            recordLoadedFeature(f, e.sourceId === 'wandrer-1', z)
+            spatialIndex.recordLoadedFeature(f, e.sourceId === 'wandrer-1', z)
           ))).catch((err: unknown) => { console.error('Error recording features', err); });
         }}
       />

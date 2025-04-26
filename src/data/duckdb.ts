@@ -35,12 +35,6 @@ await conn.query('INSTALL spatial; LOAD spatial;');
 
 export { db, conn };
 
-// noop template tag; vscode provides syntax highlighting for sql`...`
-export const sql = (strings: TemplateStringsArray, ...values: unknown[]) => {
-  if (values.length) throw new Error('Interpolating values makes query unsafe; use `prepare` instead.');
-  return strings.join('');
-};
-
 // Template literal tags for performing SQL queries
 
 export async function execSql(strings: TemplateStringsArray, ...values: unknown[]) {
