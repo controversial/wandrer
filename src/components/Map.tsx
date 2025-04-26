@@ -18,9 +18,11 @@ declare global { interface Window { map?: mapboxgl.Map; } }
 export default function MapboxMap({
   sources = [],
   layers = [],
+  onData = undefined,
 }: {
   sources?: ({ id: string } & SourceSpecification)[];
   layers?: LayerSpecification[];
+  onData?: (e: mapboxgl.MapDataEvent) => void;
 }) {
   // holds the mapboxgl.Map instance
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
@@ -88,6 +90,13 @@ export default function MapboxMap({
       cleanup();
     };
   });
+
+  // attach event listeners
+  useEffect(() => {
+    if (!map || !onData) return;
+    map.on('data', onData);
+    return () => { map.off('data', onData); };
+  }, [map, onData]);
 
 
   return <div className={cx('base')} ref={mapContainerRef} />;
