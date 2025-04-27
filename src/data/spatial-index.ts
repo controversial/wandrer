@@ -1,10 +1,11 @@
-import { AsyncDuckDB, AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
 import type { Feature } from 'geojson';
+
+import { initializeDuckDB } from './duckdb';
 import sql from './noop-template-tag';
 
 
 export class SpatialIndex {
-  #dbPromise = Promise.withResolvers<{ db: AsyncDuckDB; conn: AsyncDuckDBConnection }>();
+  #dbPromise = Promise.withResolvers<Awaited<ReturnType<typeof initializeDuckDB>>>();
   /** database connection; only resolves when initialize() has completed */
   get conn() { return this.#dbPromise.promise.then(({ conn }) => conn); }
   get db() { return this.#dbPromise.promise.then(({ db }) => db); }
@@ -21,11 +22,11 @@ export class SpatialIndex {
    */
   async #initialize() {
     // Initialize database
-    let db;
-    let conn;
+    let duck;
     try {
-      ({ db, conn } = await import('./duckdb'));
+      duck = await initializeDuckDB();
     } catch (e) { this.#dbPromise.reject(e); throw e; }
+    const { conn } = duck;
 
     // Core table for features that are loaded from wandrer tiles
     await conn.query(sql`
@@ -56,7 +57,7 @@ export class SpatialIndex {
     `);
 
     // Let everyone know the connection is ready to use
-    this.#dbPromise.resolve({ db, conn });
+    this.#dbPromise.resolve(duck);
   }
 
 
