@@ -87,9 +87,7 @@ export default function Page() {
         if (ac.signal.aborted) return;
         setTimestamps(readWandrerTileData(buf));
       })
-      .catch((e: unknown) => {
-        console.error('error reading tile data', e);
-      });
+      .catch((e: unknown) => { console.error('error reading tile data', e); });
     return () => { ac.abort(); };
   }, []);
 
@@ -123,11 +121,11 @@ export default function Page() {
 
           if (!e.tile) return;
           const features = extractTileFeatures(e.tile, targetLayerID);
-          const { z } = e.tile.tileID.canonical;
           if (!features) return;
-          Promise.all(features.map((f) => (
-            spatialIndex.recordLoadedFeature(f, e.sourceId === 'wandrer-1', z)
-          ))).catch((err: unknown) => { console.error('Error recording features', err); });
+          const featuresTraveled = e.sourceId === 'wandrer-1';
+          const { z } = e.tile.tileID.canonical;
+          spatialIndex.recordLoadedFeatures(features, featuresTraveled, z)
+            .catch((err: unknown) => { console.error('Error recording features', err); });
         }}
       />
 

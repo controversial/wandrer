@@ -24,11 +24,12 @@ if (!bundle.mainWorker) throw new Error('No worker URL found in the selected bun
 const worker = new Worker(bundle.mainWorker);
 const logger = new duckdb.ConsoleLogger();
 const db = new duckdb.AsyncDuckDB(logger, worker);
+await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+const conn = await db.connect();
+
 
 // Load the “spatial” extension
 
-await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-const conn = await db.connect();
 await conn.query('INSTALL spatial; LOAD spatial;');
 
 // Make db instance and default connection available

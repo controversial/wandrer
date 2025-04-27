@@ -1,12 +1,13 @@
-import { AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
+import { AsyncDuckDB, AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
 import type { Feature } from 'geojson';
 import sql from './noop-template-tag';
 
 
 export class SpatialIndex {
-  #connPromise = Promise.withResolvers<AsyncDuckDBConnection>();
+  #dbPromise = Promise.withResolvers<{ db: AsyncDuckDB; conn: AsyncDuckDBConnection }>();
   /** database connection; only resolves when initialize() has completed */
-  get conn() { return this.#connPromise.promise; }
+  get conn() { return this.#dbPromise.promise.then(({ conn }) => conn); }
+  get db() { return this.#dbPromise.promise.then(({ db }) => db); }
 
   constructor() {
     // kick off initialization immediately
@@ -20,10 +21,11 @@ export class SpatialIndex {
    */
   async #initialize() {
     // Initialize database
+    let db;
     let conn;
     try {
-      ({ conn } = await import('./duckdb'));
-    } catch (e) { this.#connPromise.reject(e); throw e; }
+      ({ db, conn } = await import('./duckdb'));
+    } catch (e) { this.#dbPromise.reject(e); throw e; }
 
     // Core table for features that are loaded from wandrer tiles
     await conn.query(sql`
@@ -54,7 +56,7 @@ export class SpatialIndex {
     `);
 
     // Let everyone know the connection is ready to use
-    this.#connPromise.resolve(conn);
+    this.#dbPromise.resolve({ db, conn });
   }
 
 
@@ -68,15 +70,23 @@ export class SpatialIndex {
       recorded_at_z = EXCLUDED.recorded_at_z
     WHERE segments.recorded_at_z <= EXCLUDED.recorded_at_z;
   `));
-  /** Record a feature in the database when it’s loaded from a Mapbox tile */
-  async recordLoadedFeature(feature: Feature, traveled: boolean, tileZ: number) {
-    await (await this.#insertFeatureQuery).query(
+  /** Record features in the database when a Mapbox tile is loaded */
+  async recordLoadedFeatures(features: Feature[], traveled: boolean, tileZ: number) {
+    const db = await this.db;
+    const startTime = performance.now();
+    const conn = await db.connect();
+    const query = await this.#insertFeatureQuery;
+    await conn.query('BEGIN TRANSACTION;');
+    await Promise.all(features.map((feature) => query.query(
       feature.id,
       JSON.stringify(feature.geometry),
       traveled,
       typeof feature.properties?.unpaved === 'boolean' ? feature.properties.unpaved : false,
       tileZ,
-    );
+    )));
+    await conn.query('COMMIT;');
+    console.log(`recorded ${features.length} features in ${performance.now() - startTime}ms`);
+    await conn.close();
   }
 }
 
