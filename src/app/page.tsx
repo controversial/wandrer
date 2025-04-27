@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useControls, Leva } from 'leva';
 
 import MapboxMap from 'components/Map';
-import { readWandrerTileData } from 'data/wandrer-tile-data';
 import type { SourceSpecification, LayerSpecification } from 'mapbox-gl';
 import { extractTileFeatures } from 'data/mapbox-util';
 
@@ -77,21 +76,6 @@ const layers = (
 
 
 export default function Page() {
-  // Fetch date data
-  const [timestamps, setTimestamps] = useState<Record<string, number> | null>(null);
-  useEffect(() => {
-    const ac = new AbortController();
-    fetch('/api/tile_data', { signal: ac.signal })
-      .then((res) => res.arrayBuffer())
-      .then((buf) => {
-        if (ac.signal.aborted) return;
-        setTimestamps(readWandrerTileData(buf));
-      })
-      .catch((e: unknown) => { console.error('error reading tile data', e); });
-    return () => { ac.abort(); };
-  }, []);
-
-
   const { traveledColor, untraveledColor } = useControls({
     traveledColor: {
       value: '#0040ff',
@@ -117,11 +101,12 @@ export default function Page() {
         onData={(e) => {
           if (e.dataType !== 'source') return;
           if (e.sourceId !== 'wandrer-1' && e.sourceId !== 'wandrer-2') return;
-          const targetLayerID = { 'wandrer-1': 'se', 'wandrer-2': 'missing_segments' }[e.sourceId];
-
+          // extract features from loaded tile
           if (!e.tile) return;
+          const targetLayerID = { 'wandrer-1': 'se', 'wandrer-2': 'missing_segments' }[e.sourceId];
           const features = extractTileFeatures(e.tile, targetLayerID);
           if (!features) return;
+          // record features in the spatial index
           const featuresTraveled = e.sourceId === 'wandrer-1';
           const { z } = e.tile.tileID.canonical;
           spatialIndex.recordLoadedFeatures(features, featuresTraveled, z)

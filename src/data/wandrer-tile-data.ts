@@ -34,13 +34,13 @@ export function readWandrerTileData(buff: ArrayBuffer) {
       if (tag === 1) {
         const dataLength = pbf.readVarint();
         const dataPoint = readTileDataInner(pbf, pbf.pos + dataLength);
-        if (dataPoint.is_bike) {
-          result[dataPoint.osm_id.toString()] = dataPoint.timestamp * 1000;
-        }
-      } else {
-        console.warn('unexpected tag in tile data', tag);
-      }
+        if (!dataPoint.is_bike) return;
+        result.set(
+          dataPoint.osm_id.toString(),
+          dataPoint.timestamp * 1000,
+        );
+      } else { console.warn('unexpected tag in tile data', tag); }
     },
-    {} as Record<string, number>,
+    new Map<string, number>(),
   );
 }

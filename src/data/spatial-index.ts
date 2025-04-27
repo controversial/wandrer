@@ -2,6 +2,8 @@ import type { Feature } from 'geojson';
 
 import { initializeDuckDB } from './duckdb';
 import sql from './noop-template-tag';
+import { readWandrerTileData } from './wandrer-tile-data';
+import * as arrow from 'apache-arrow';
 
 
 export class SpatialIndex {
@@ -11,9 +13,15 @@ export class SpatialIndex {
   get db() { return this.#dbPromise.promise.then(({ db }) => db); }
 
   constructor() {
+    // don’t do anything on the server
+    if (typeof window === 'undefined') return;
+
     // kick off initialization immediately
     this.#initialize()
       .catch((e: unknown) => { console.error('Failed to initialize spatial index:', e); });
+
+    this.loadSegmentTimestamps()
+      .catch((e: unknown) => { console.error('Failed to load segment timestamps:', e); });
   }
 
   /**
@@ -90,6 +98,37 @@ export class SpatialIndex {
     console.log(`recorded ${features.length} features in ${performance.now() - startTime}ms`);
 
     db.dropFile(filename).catch(() => {});
+  }
+
+  /** Populate the segments_traveled_at table from wandrer data */
+  async loadSegmentTimestamps() {
+    // Download segment data
+    const r = await fetch('/api/tile_data');
+    const buff = await r.arrayBuffer();
+
+    // Parse segment data and transform into an Arrow table
+    const data = readWandrerTileData(buff);
+    const rowType = new arrow.Struct<{
+      wandrer_id: arrow.Utf8;
+      traveled_at: arrow.Timestamp;
+    }>([
+      new arrow.Field('wandrer_id', new arrow.Utf8()),
+      new arrow.Field('traveled_at', new arrow.Timestamp(arrow.TimeUnit.MILLISECOND)),
+    ]);
+    const vector = arrow.vectorFromArray(
+      [...data.entries()].map(([k, v]) => ({ wandrer_id: k, traveled_at: v })),
+      rowType,
+    );
+    if (vector.data.length !== 1) throw new Error('Expected vector to have exactly one chunk');
+    const table = new arrow.Table(new arrow.RecordBatch(
+      new arrow.Schema(rowType.children),
+      vector.data[0],
+    ));
+
+    // Insert the Arrow table into the database
+    const conn = await this.conn;
+    const ipc = arrow.tableToIPC(table, 'stream');
+    await conn.insertArrowFromIPCStream(ipc, { name: 'segments_traveled_at', create: false });
   }
 }
 
