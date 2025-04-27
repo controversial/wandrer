@@ -60,33 +60,35 @@ export class SpatialIndex {
   }
 
 
-  /** Query for recording a GeoJSON feature in the database */
-  #insertFeatureQuery = this.conn.then((conn) => conn.prepare(sql`
-    INSERT INTO segments (wandrer_id, geom, traveled, unpaved, recorded_at_z)
-    VALUES (?, ST_GeomFromGeoJSON(?), ?, ?, ?)
-    -- overwrite geometry when it’s loaded at a higher zoom level
-    ON CONFLICT (wandrer_id) DO UPDATE SET
-      geom = EXCLUDED.geom,
-      recorded_at_z = EXCLUDED.recorded_at_z
-    WHERE segments.recorded_at_z <= EXCLUDED.recorded_at_z;
-  `));
   /** Record features in the database when a Mapbox tile is loaded */
   async recordLoadedFeatures(features: Feature[], traveled: boolean, tileZ: number) {
     const db = await this.db;
+    const conn = await this.conn;
     const startTime = performance.now();
-    const conn = await db.connect();
-    const query = await this.#insertFeatureQuery;
-    await conn.query('BEGIN TRANSACTION;');
-    await Promise.all(features.map((feature) => query.query(
-      feature.id,
-      JSON.stringify(feature.geometry),
-      traveled,
-      typeof feature.properties?.unpaved === 'boolean' ? feature.properties.unpaved : false,
-      tileZ,
-    )));
-    await conn.query('COMMIT;');
+
+    // Construct and upload a newline-delimited GeoJSON file to duckdb
+    const geojsonl = features.map((f) => JSON.stringify({
+      type: 'Feature',
+      geometry: f.geometry,
+      properties: { wid: f.id, z: tileZ, t: traveled, up: Boolean(f.properties?.unpaved) },
+    })).join('\n');
+    const filename = `${crypto.randomUUID()}.geojsonl`;
+    await db.registerFileText(filename, geojsonl);
+
+    // Copy data from the geojson file into the segments table
+    const statement = await conn.prepare(sql`
+      INSERT INTO segments (wandrer_id, geom, traveled, unpaved, recorded_at_z)
+      SELECT wid, geom, t, up, z FROM ST_Read(?)
+      ON CONFLICT (wandrer_id) DO UPDATE SET
+        geom = EXCLUDED.geom,
+        recorded_at_z = EXCLUDED.recorded_at_z
+      WHERE segments.recorded_at_z < EXCLUDED.recorded_at_z;
+    `);
+    await statement.query(filename);
+
     console.log(`recorded ${features.length} features in ${performance.now() - startTime}ms`);
-    await conn.close();
+
+    db.dropFile(filename).catch(() => {});
   }
 }
 
