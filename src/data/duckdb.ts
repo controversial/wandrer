@@ -1,15 +1,12 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
-import duckdbWasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm';
-import duckdbWasmNext from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
-
 
 const BUNDLES = {
   mvp: {
-    mainModule: duckdbWasm,
+    mainModule: new URL('@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm', import.meta.url).toString(),
     mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js', import.meta.url).toString(),
   },
   eh: {
-    mainModule: duckdbWasmNext,
+    mainModule: new URL('@duckdb/duckdb-wasm/dist/duckdb-eh.wasm', import.meta.url).toString(),
     mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
   },
 } satisfies duckdb.DuckDBBundles;
@@ -19,7 +16,7 @@ const BUNDLES = {
 export async function initializeDuckDB() {
   const bundle = await duckdb.selectBundle(BUNDLES);
   if (!bundle.mainWorker) throw new Error('No worker URL found in the selected bundle.');
-  const worker = new Worker(bundle.mainWorker);
+  const worker = new Worker(/* turbopackIgnore: true */bundle.mainWorker);
   const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING);
   const db = new duckdb.AsyncDuckDB(logger, worker);
   await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
