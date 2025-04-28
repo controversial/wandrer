@@ -12,28 +12,28 @@
     "apache-arrow": "^19.0.1",
     "classnames": "^2.5.1",
     "leva": "^0.10.0",
-    "mapbox-gl": "^3.11.0",
-    "next": "^15.3.1",
+    "mapbox-gl": "^3.11.1",
+    "next": "^15.4.0-canary.12",
     "pbf": "^4.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "sass-embedded": "^1.86.3"
+    "sass-embedded": "^1.87.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.8",
     "@eslint/eslintrc": "^3.3.1",
-    "@eslint/js": "^9.25.0",
+    "@eslint/js": "^9.25.1",
     "@next/eslint-plugin-next": "^15.3.1",
     "@stylistic/eslint-plugin": "^4.2.0",
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/node": "^22.14.1",
+    "@types/node": "^22.15.3",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
-    "eslint": "^9.25.0",
+    "eslint": "^9.25.1",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-import-resolver-exports": "^1.0.0-beta.5",
-    "eslint-import-resolver-typescript": "^4.3.3",
-    "eslint-plugin-import-x": "^4.10.6",
+    "eslint-import-resolver-typescript": "^4.3.4",
+    "eslint-plugin-import-x": "^4.11.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-compiler": "beta",
@@ -41,6 +41,6 @@
     "globals": "^16.0.0",
     "jiti": "^2.4.2",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.30.1"
+    "typescript-eslint": "^8.31.1"
   }
 }

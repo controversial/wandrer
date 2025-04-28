@@ -16,7 +16,7 @@ const BUNDLES = {
 export async function initializeDuckDB() {
   const bundle = await duckdb.selectBundle(BUNDLES);
   if (!bundle.mainWorker) throw new Error('No worker URL found in the selected bundle.');
-  const worker = new Worker(/* turbopackIgnore: true */bundle.mainWorker);
+  const worker = new Worker(bundle.mainWorker);
   const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING);
   const db = new duckdb.AsyncDuckDB(logger, worker);
   await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
