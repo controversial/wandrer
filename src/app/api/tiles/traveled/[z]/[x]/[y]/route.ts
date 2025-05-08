@@ -15,7 +15,7 @@ export async function GET(
     return new Response('Invalid parameters', { status: 400 });
   }
 
-  const tileUrl = `https://wandrer.earth/tiles/m2/${WANDRER_ATHLETE_ID}/bike/${z}/${x}/${y}?f=1`;
+  const tileUrl = `https://tiles2.wandrer.earth/tiles/${WANDRER_ATHLETE_ID}/bike/${z}/${x}/${y}`;
   const r = await fetch(tileUrl);
   return new Response(r.body);
 }
