@@ -15,6 +15,13 @@ mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 declare global { interface Window { map?: mapboxgl.Map; } }
 
 
+const url = (partial: string) => {
+  if (typeof window === 'undefined') throw new Error('url is client-only');
+  const fullUrl = new URL(partial, window.location.origin).href;
+  return fullUrl.replace(/%7B([a-zA-Z0-9_]+)%7D/g, '{$1}'); // unescape curly parameters like {x}
+};
+
+
 export default function MapboxMap({
   sources = [],
   layers = [],
@@ -48,12 +55,6 @@ export default function MapboxMap({
 
     return () => { m.remove(); };
   }, []);
-
-  const url = (partial: string) => {
-    if (typeof window === 'undefined') throw new Error('url is client-only');
-    const fullUrl = new URL(partial, window.location.origin).href;
-    return fullUrl.replace(/%7B([a-zA-Z0-9_]+)%7D/g, '{$1}'); // unescape curly parameters like {x}
-  };
 
   useEffect(() => {
     if (!map || sources.length === 0) return;
@@ -89,7 +90,7 @@ export default function MapboxMap({
       map.off('load', cb);
       cleanup();
     };
-  });
+  }, [map, sources, layers]);
 
   // attach event listeners
   useEffect(() => {
