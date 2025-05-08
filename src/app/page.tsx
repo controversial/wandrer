@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useControls, Leva } from 'leva';
 
 import MapboxMap from 'components/Map';
 import type { SourceSpecification, LayerSpecification } from 'mapbox-gl';
 import { extractTileFeatures } from 'data/mapbox-util';
 
+import Controls from 'components/Controls';
+
 import spatialIndex from 'data/spatial-index';
+import type { Temporal } from 'temporal-polyfill';
 
 import classNames from 'classnames/bind';
 import styles from './page.module.scss';
@@ -86,6 +89,9 @@ export default function Page() {
     },
   });
 
+  const [maxDate, setMaxDate] = useState<Temporal.ZonedDateTime | undefined>(undefined);
+  console.log('maxDate', maxDate?.toLocaleString());
+
   return (
     <div className={cx('base')}>
       <MapboxMap
@@ -110,6 +116,8 @@ export default function Page() {
             .catch((err: unknown) => { console.error('Error recording features', err); });
         }}
       />
+
+      <Controls untilDate={maxDate} onUntilDateChange={setMaxDate} />
 
       <Leva collapsed />
     </div>
