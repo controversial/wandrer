@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useControls, Leva } from 'leva';
 
 import MapboxMap from 'components/Map';
@@ -92,9 +92,12 @@ export default function Page() {
   const [maxDate, setMaxDate] = useState<Temporal.ZonedDateTime | undefined>(undefined);
   console.log('maxDate', maxDate?.toLocaleString());
 
+  const mapRef = useRef<{ map: mapboxgl.Map | null }>(null);
+
   return (
     <div className={cx('base')}>
       <MapboxMap
+        ref={mapRef}
         sources={sources}
         layers={useMemo(
           () => layers({ traveledColor, untraveledColor }),

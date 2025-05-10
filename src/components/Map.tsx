@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useImperativeHandle } from 'react';
 
 import mapboxgl, { type LayerSpecification, type SourceSpecification } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -26,13 +26,18 @@ export default function MapboxMap({
   sources = [],
   layers = [],
   onData = undefined,
+  ref = undefined,
 }: {
   sources?: ({ id: string } & SourceSpecification)[];
   layers?: LayerSpecification[];
   onData?: (e: mapboxgl.MapDataEvent) => void;
+  ref?: React.RefObject<{ map: mapboxgl.Map | null } | null>;
 }) {
   // holds the mapboxgl.Map instance
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
+  useImperativeHandle(ref, () => ({
+    map,
+  }), [map]);
 
   // callback ref to initialize the map within the container div
   const mapContainerRef = useCallback((node: HTMLDivElement) => {
