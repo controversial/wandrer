@@ -103,7 +103,7 @@ export class SpatialIndex {
   /** Populate the segments_traveled_at table from wandrer data */
   async loadSegmentTimestamps() {
     // Download segment data
-    const r = await fetch('/api/tile_data');
+    const r = await fetch('/api/tile-data');
     const buff = await r.arrayBuffer();
 
     // Parse segment data and transform into an Arrow table

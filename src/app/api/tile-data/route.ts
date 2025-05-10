@@ -10,3 +10,6 @@ export async function GET(): Promise<Response> {
   if (!dataRes.ok) { return new Response('Received error response from tile data', { status: 500 }); }
   return new Response(dataRes.body);
 }
+
+export const dynamic = 'force-static';
+export const revalidate = 3600; // 1 hour
