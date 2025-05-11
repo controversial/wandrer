@@ -5,6 +5,9 @@ import sql from './noop-template-tag';
 import { readWandrerTileData } from './wandrer-tile-data';
 import * as arrow from 'apache-arrow';
 
+import mitt from 'mitt';
+
+const onServer = typeof window === 'undefined';
 
 export class SpatialIndex {
   #dbPromise = Promise.withResolvers<Awaited<ReturnType<typeof initializeDuckDB>>>();
@@ -12,16 +15,19 @@ export class SpatialIndex {
   get conn() { return this.#dbPromise.promise.then(({ conn }) => conn); }
   get db() { return this.#dbPromise.promise.then(({ db }) => db); }
 
+  segmentTimestamps = onServer ? null : this.#loadSegmentTimestamps();
+
+  mitt = mitt<{
+    'features-recorded': Map<string | number, { traveled: boolean; timestamp: number | undefined; }>;
+  }>();
+
   constructor() {
     // don’t do anything on the server
-    if (typeof window === 'undefined') return;
+    if (onServer) return;
 
     // kick off initialization immediately
     this.#initialize()
       .catch((e: unknown) => { console.error('Failed to initialize spatial index:', e); });
-
-    this.loadSegmentTimestamps()
-      .catch((e: unknown) => { console.error('Failed to load segment timestamps:', e); });
   }
 
   /**
@@ -69,39 +75,8 @@ export class SpatialIndex {
   }
 
 
-  /** Record features in the database when a Mapbox tile is loaded */
-  async recordLoadedFeatures(features: Feature[], traveled: boolean, tileZ: number) {
-    const db = await this.db;
-    const conn = await this.conn;
-    const startTime = performance.now();
-
-    // Construct and upload a newline-delimited GeoJSON file to duckdb
-    const geojsonl = features.map((f) => JSON.stringify({
-      type: 'Feature',
-      geometry: f.geometry,
-      properties: { wid: f.id, z: tileZ, t: traveled, up: Boolean(f.properties?.unpaved) },
-    })).join('\n');
-    const filename = `${crypto.randomUUID()}.geojsonl`;
-    await db.registerFileText(filename, geojsonl);
-
-    // Copy data from the geojson file into the segments table
-    const statement = await conn.prepare(sql`
-      INSERT INTO segments (wandrer_id, geom, traveled, unpaved, recorded_at_z)
-      SELECT wid, geom, t, up, z FROM ST_Read(?)
-      ON CONFLICT (wandrer_id) DO UPDATE SET
-        geom = EXCLUDED.geom,
-        recorded_at_z = EXCLUDED.recorded_at_z
-      WHERE segments.recorded_at_z < EXCLUDED.recorded_at_z;
-    `);
-    await statement.query(filename);
-
-    console.log(`recorded ${features.length} features in ${performance.now() - startTime}ms`);
-
-    db.dropFile(filename).catch(() => {});
-  }
-
   /** Populate the segments_traveled_at table from wandrer data */
-  async loadSegmentTimestamps() {
+  async #loadSegmentTimestamps() {
     // Download segment data
     const r = await fetch('/api/tile-data');
     const buff = await r.arrayBuffer();
@@ -129,6 +104,59 @@ export class SpatialIndex {
     const conn = await this.conn;
     const ipc = arrow.tableToIPC(table, 'stream');
     await conn.insertArrowFromIPCStream(ipc, { name: 'segments_traveled_at', create: false });
+
+    return data;
+  }
+
+
+  /** Record features in the database when a Mapbox tile is loaded */
+  async recordLoadedFeatures(
+    features: Feature[],
+    featuresMetadata: { traveled: boolean; tileZ: number },
+  ) {
+    const db = await this.db;
+    const conn = await this.conn;
+    const startTime = performance.now();
+
+    // Construct and upload a newline-delimited GeoJSON file to duckdb
+    const { traveled, tileZ } = featuresMetadata;
+    const geojsonl = features.map((f) => JSON.stringify({
+      type: 'Feature',
+      geometry: f.geometry,
+      properties: { wid: f.id, z: tileZ, t: traveled, up: Boolean(f.properties?.unpaved) },
+    })).join('\n');
+    const filename = `${crypto.randomUUID()}.geojsonl`;
+    await db.registerFileText(filename, geojsonl);
+
+    // Copy data from the geojson file into the segments table
+    const statement = await conn.prepare(sql`
+      INSERT INTO segments (wandrer_id, geom, traveled, unpaved, recorded_at_z)
+      SELECT wid, geom, t, up, z FROM ST_Read(?)
+      ON CONFLICT (wandrer_id) DO UPDATE SET
+        geom = EXCLUDED.geom,
+        recorded_at_z = EXCLUDED.recorded_at_z
+      WHERE segments.recorded_at_z < EXCLUDED.recorded_at_z;
+    `);
+    await statement.query(filename);
+
+    console.log(`recorded ${features.length} features in ${performance.now() - startTime}ms`);
+
+    db.dropFile(filename).catch(() => {});
+
+    // report features-recorded event
+    // enhances features with timestamps for traveled segments
+    if (this.mitt.all.has('features-recorded')) {
+      (async () => {
+        const timestamps = featuresMetadata.traveled ? await this.segmentTimestamps : null;
+        this.mitt.emit(
+          'features-recorded',
+          new Map(features.flatMap((f) => (!f.id ? [] : [[
+            f.id,
+            { traveled: featuresMetadata.traveled, timestamp: timestamps?.get(f.id.toString()) },
+          ]]))),
+        );
+      })().catch(() => { console.error('failed to report features-recorded'); });
+    }
   }
 }
 

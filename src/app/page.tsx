@@ -115,7 +115,7 @@ export default function Page() {
           // record features in the spatial index
           const featuresTraveled = e.sourceId === 'wandrer-1';
           const { z } = e.tile.tileID.canonical;
-          spatialIndex.recordLoadedFeatures(features, featuresTraveled, z)
+          spatialIndex.recordLoadedFeatures(features, { traveled: featuresTraveled, tileZ: z })
             .catch((err: unknown) => { console.error('Error recording features', err); });
         }}
       />
