@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useControls, Leva } from 'leva';
 
 import MapboxMap from 'components/Map';
@@ -93,6 +93,24 @@ export default function Page() {
   console.log('maxDate', maxDate?.toLocaleString());
 
   const mapRef = useRef<{ map: mapboxgl.Map | null }>(null);
+
+  // record segment timestamps from spatial index in mapbox feature state
+  useEffect(() => {
+    const featureDataHandler = (
+      data: Map<string | number, { traveled: boolean; timestamp: number | undefined }>,
+    ) => {
+      data.forEach((value, key) => {
+        const map = mapRef.current?.map;
+        // only traveled features have timestamps
+        if (!map || !value.timestamp || !value.traveled) return;
+        map.setFeatureState({ source: 'wandrer-1', sourceLayer: 'se', id: key }, {
+          traveledAt: value.timestamp,
+        });
+      });
+    };
+    spatialIndex.mitt.on('features-recorded', featureDataHandler);
+    return () => { spatialIndex.mitt.off('features-recorded', featureDataHandler); };
+  }, []);
 
   return (
     <div className={cx('base')}>
