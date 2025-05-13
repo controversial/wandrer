@@ -11,9 +11,9 @@ function startOfWeek(date: Temporal.PlainDate) {
   return date.subtract({ days: date.dayOfWeek - 1 });
 }
 
-const minDate = startOfWeek(Temporal.PlainDate.from({ year: 2024, month: 10, day: 15 }));
+const minDate = startOfWeek(Temporal.PlainDate.from({ year: 2023, month: 9, day: 1 }));
 function useMaxDate() {
-  const stableDate = useMemo(() => startOfWeek(Temporal.Now.plainDateISO()), []);
+  const stableDate = useMemo(() => startOfWeek(Temporal.Now.plainDateISO().add({ weeks: 1 })), []);
   return useSyncExternalStore(() => () => {}, () => stableDate, () => stableDate);
 }
 

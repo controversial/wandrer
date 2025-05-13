@@ -61,6 +61,7 @@ export default function MapboxMap({
     return () => { m.remove(); };
   }, []);
 
+  // Set up sources + layers
   useEffect(() => {
     if (!map || sources.length === 0) return;
     let cleanup = () => {};

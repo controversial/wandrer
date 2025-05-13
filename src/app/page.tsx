@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { useControls, Leva } from 'leva';
 
 import MapboxMap from 'components/Map';
@@ -34,43 +34,38 @@ const sources = [
   },
 ] satisfies SourceSpecification[];
 
+const line = {
+  type: 'line',
+  slot: 'middle',
+  paint: {
+    'line-occlusion-opacity': 0.3,
+    'line-width': {
+      type: 'exponential',
+      base: 1.5,
+      stops: [[11, 1], [16, 4]],
+    },
+  },
+} satisfies Partial<LayerSpecification>;
+
 const layers = (
   { traveledColor, untraveledColor }: { traveledColor: string; untraveledColor: string; },
 ) => [
   // untraveled segments in red
   {
     id: 'wandrer-untraveled',
-    type: 'line',
     source: 'wandrer-2',
     'source-layer': 'missing_segments',
-    slot: 'middle',
-    paint: {
-      'line-color': untraveledColor,
-      'line-occlusion-opacity': 0.3,
-      'line-width': {
-        type: 'exponential',
-        base: 1.5,
-        stops: [[11, 1], [16, 4]],
-      },
-    },
+    ...line,
+    paint: { ...line.paint, 'line-color': untraveledColor },
   },
 
   // traveled segments in blue
   {
     id: 'wandrer-traveled',
-    type: 'line',
     source: 'wandrer-1',
     'source-layer': 'se',
-    slot: 'middle',
-    paint: {
-      'line-color': traveledColor,
-      'line-occlusion-opacity': 0.3,
-      'line-width': {
-        type: 'exponential',
-        base: 1.5,
-        stops: [[11, 1], [16, 4]],
-      },
-    },
+    ...line,
+    paint: { ...line.paint, 'line-color': traveledColor }, // line-color will be overridden
   },
 ] satisfies LayerSpecification[];
 
@@ -88,9 +83,6 @@ export default function Page() {
       input: 'color',
     },
   });
-
-  const [maxDate, setMaxDate] = useState<Temporal.ZonedDateTime | undefined>(undefined);
-  console.log('maxDate', maxDate?.toLocaleString());
 
   const mapRef = useRef<{ map: mapboxgl.Map | null }>(null);
 
@@ -112,6 +104,26 @@ export default function Page() {
     return () => { spatialIndex.mitt.off('features-recorded', featureDataHandler); };
   }, []);
 
+
+  // set the traveled-layers color visibility based on the maxDate
+  const [dateLimit, setDateLimit] = useState<Temporal.ZonedDateTime | undefined>(undefined);
+  console.log('maxDate', dateLimit?.toLocaleString());
+
+  useEffect(() => {
+    const map = mapRef.current?.map;
+    if (!map) return;
+    if (!dateLimit) map.setPaintProperty('wandrer-traveled', 'line-color', traveledColor);
+    else {
+      const segmentTraveledAt = ['number', ['feature-state', 'traveledAt'], 0];
+      map.setPaintProperty('wandrer-traveled', 'line-color', [
+        'case',
+        ['<=', segmentTraveledAt, dateLimit.epochMilliseconds],
+        traveledColor,
+        untraveledColor,
+      ]);
+    }
+  }, [dateLimit, traveledColor, untraveledColor]);
+
   return (
     <div className={cx('base')}>
       <MapboxMap
@@ -122,7 +134,7 @@ export default function Page() {
           [traveledColor, untraveledColor],
         )}
 
-        onData={(e) => {
+        onData={useCallback((e: mapboxgl.MapDataEvent) => {
           if (e.dataType !== 'source') return;
           if (e.sourceId !== 'wandrer-1' && e.sourceId !== 'wandrer-2') return;
           // extract features from loaded tile
@@ -135,10 +147,10 @@ export default function Page() {
           const { z } = e.tile.tileID.canonical;
           spatialIndex.recordLoadedFeatures(features, { traveled: featuresTraveled, tileZ: z })
             .catch((err: unknown) => { console.error('Error recording features', err); });
-        }}
+        }, [])}
       />
 
-      <Controls untilDate={maxDate} onUntilDateChange={setMaxDate} />
+      <Controls untilDate={dateLimit} onUntilDateChange={setDateLimit} />
 
       <Leva collapsed />
     </div>

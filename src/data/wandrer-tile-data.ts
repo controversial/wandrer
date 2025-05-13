@@ -37,7 +37,7 @@ export function readWandrerTileData(buff: ArrayBuffer) {
         if (!dataPoint.is_bike) return;
         result.set(
           dataPoint.osm_id.toString(),
-          dataPoint.timestamp * 1000,
+          dataPoint.timestamp * 1000, // seconds to milliseconds for js convention
         );
       } else { console.warn('unexpected tag in tile data', tag); }
     },
