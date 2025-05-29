@@ -1,0 +1,33 @@
+[project]
+name = "wandrer-data"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "fitparse>=1.2.0",
+    "geopandas>=1.0.1",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.3",
+    "networkx>=3.4.2",
+    "osmnx>=2.0.3",
+    "pandas>=2.2.3",
+    "shapely>=2.1.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.9",
+]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+]
