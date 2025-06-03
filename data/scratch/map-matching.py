@@ -3,6 +3,21 @@ import marimo
 __generated_with = "0.13.14"
 app = marimo.App(width="medium")
 
+with app.setup:
+    import marimo as mo
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(
+        """
+    # 1. Map download
+
+    Download the cycling network from OpenStreetMap using osmnx
+    """
+    )
+    return
+
 
 @app.cell
 def _():
@@ -106,15 +121,62 @@ def _(bike_network_undirected, ox):
 def _(ways_gdf):
     import leafmap.foliumap as leafmap
 
-    map = leafmap.Map()
-    map.add_basemap("CartoDB.DarkMatter")
-    map.add_gdf(
+    network_map = leafmap.Map()
+    network_map.add_basemap("CartoDB.DarkMatter")
+    network_map.add_gdf(
         ways_gdf.reset_index(),
         layer_name="Ways",
         info_mode="on_click",
         style={"color": "#ffffff", "weight": 2, "fill": False, "opacity": 0.5}
     )
-    map
+    network_map
+    return (leafmap,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md("""# 2. GPS track""")
+    return
+
+
+@app.cell
+def _():
+    import fitparse
+    import geopandas as gpd
+
+    def load_track(path: str):
+        fitfile = fitparse.FitFile(path)
+        entries = gpd.GeoDataFrame(
+            record.get_values()
+            for record in fitfile.get_messages("record")
+            if isinstance(record, fitparse.DataMessage)
+        )
+        entries["lat"] = entries["position_lat"] * (180 / 2**31)
+        entries["lng"] = entries["position_long"] * (180 / 2**31)
+
+        track = (
+            entries.drop(columns=["position_lat", "position_long"])
+            .set_geometry(gpd.points_from_xy(entries["lng"], entries["lat"]), crs="wgs84")
+            .dropna(subset=["lat", "lng"])
+            .drop(columns=["lat", "lng", "altitude"])
+            .rename(columns={"enhanced_altitude": "altitude", "enhanced_speed": "speed"})
+        )
+
+        return track
+
+    track1 = load_track("testdata/track1.fit")
+    track1
+    return (track1,)
+
+
+@app.cell
+def _(leafmap, track1):
+    import folium
+
+    track_map = leafmap.Map()
+    track_map.add_basemap("CartoDB.DarkMatter")
+    track_map.add_gdf(track1, marker=folium.CircleMarker(radius=3))
+    track_map
     return
 
 
