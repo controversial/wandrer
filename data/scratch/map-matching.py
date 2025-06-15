@@ -180,7 +180,7 @@ def _(leafmap, track):
     track_linestring = shapely.geometry.LineString(track["geometry"])
     track_map.add_geojson(shapely.to_geojson(track_linestring), style={ "color": "#1e2" })
     track_map
-    return
+    return folium, shapely
 
 
 @app.cell(hide_code=True)
@@ -241,6 +241,33 @@ def _(shapely, track_proj, ways_gdf_proj):
     matched_ways_1 = get_ways_for_point(point_1, 30)
     matched_ways_1
     return matched_ways_1, point_1
+
+
+@app.cell
+def _(
+    folium,
+    leafmap,
+    matched_ways_1,
+    point_1,
+    shapely,
+    transformer_to_latlng,
+):
+    # example visualization
+    matched_ways_map = leafmap.Map(tiles="CartoDB.DarkMatter")
+    # plot original point
+    matched_ways_map.add_marker(transformer_to_latlng.transform(point_1.x, point_1.y)[::-1])
+    # plot “matched points” on matched ways
+    matched_point_df = matched_ways_1.set_geometry("matched_point", crs=matched_ways_1.crs)[["matched_point"]]
+    matched_ways_map.add_gdf(matched_point_df, marker=folium.CircleMarker(radius=5), style={"color": "red"})
+    # plot dotted lines between original point and matched points
+    matched_ways_map.add_gdf(
+        matched_point_df["matched_point"].apply(lambda point_2: shapely.LineString([point_1, point_2])).to_frame(),
+        style={ "color": "red", "dashArray": "5" }
+    )
+    matched_ways_map.add_gdf(matched_ways_1[["geometry"]])
+
+    matched_ways_map
+    return
 
 
 if __name__ == "__main__":
