@@ -121,7 +121,7 @@ def _(bike_network_undirected, ox):
 def _(ways_gdf):
     import leafmap.foliumap as leafmap
 
-    network_map = leafmap.Map()
+    network_map = leafmap.Map(tiles="CartoDB.DarkMatter")
     network_map.add_basemap("CartoDB.DarkMatter")
     network_map.add_gdf(
         ways_gdf.reset_index(),
@@ -146,6 +146,7 @@ def _():
 
     def load_track(path: str):
         fitfile = fitparse.FitFile(path)
+        # TODO: split into multiple dataframes where there was a pause of more than a few seconds
         entries = gpd.GeoDataFrame(
             record.get_values()
             for record in fitfile.get_messages("record")
@@ -164,18 +165,20 @@ def _():
 
         return track
 
-    track1 = load_track("testdata/track1.fit")
-    track1
-    return (track1,)
+    track = load_track("testdata/track2.fit")
+    track
+    return (track,)
 
 
 @app.cell
-def _(leafmap, track1):
+def _(leafmap, track):
     import folium
+    import shapely
 
-    track_map = leafmap.Map()
-    track_map.add_basemap("CartoDB.DarkMatter")
-    track_map.add_gdf(track1, marker=folium.CircleMarker(radius=3))
+    track_map = leafmap.Map(tiles="CartoDB.DarkMatter")
+    track_map.add_gdf(track, marker=folium.CircleMarker(radius=5))
+    track_linestring = shapely.geometry.LineString(track["geometry"])
+    track_map.add_geojson(shapely.to_geojson(track_linestring), style={ "color": "#1e2" })
     track_map
     return
 
