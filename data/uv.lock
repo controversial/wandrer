@@ -2826,6 +2826,7 @@ dependencies = [
     { name = "networkx" },
     { name = "osmnx" },
     { name = "pandas" },
+    { name = "pyproj" },
     { name = "shapely" },
 ]
 
@@ -2845,6 +2846,7 @@ requires-dist = [
     { name = "networkx", specifier = ">=3.4.2" },
     { name = "osmnx", specifier = ">=2.0.3" },
     { name = "pandas", specifier = ">=2.2.3" },
+    { name = "pyproj", specifier = ">=3.7.1" },
     { name = "shapely", specifier = ">=2.1.1" },
 ]
 

@@ -183,5 +183,65 @@ def _(leafmap, track):
     return
 
 
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""# 3. Matching GPS track to street network""")
+    return
+
+
+@app.cell
+def _(track):
+    from pyproj import Transformer
+
+    crs = track.estimate_utm_crs()
+
+    transformer_to_meters = Transformer.from_crs("wgs84", crs, always_xy=True)
+    transformer_to_latlng = Transformer.from_crs(crs, "wgs84", always_xy=True)
+
+    crs
+    return crs, transformer_to_latlng
+
+
+@app.cell
+def _(crs, track, ways_gdf):
+    ways_gdf_proj = ways_gdf.to_crs(crs)
+    track_proj = track.to_crs(crs)
+    return track_proj, ways_gdf_proj
+
+
+@app.cell
+def _(shapely, track_proj, ways_gdf_proj):
+    import pandas as pd
+    import numpy as np
+
+    def get_ways_for_point(
+        point_proj: shapely.Point,
+        radius: int = 20,
+    ):
+        # Find all ways that intersect within radius of point
+        matched_ways = ways_gdf_proj.iloc[ways_gdf_proj["geometry"].sindex.query(
+            point_proj,
+            predicate="dwithin",
+            distance=radius,
+        )]
+        # compute distance to each
+        def get_match_geom(way_geom):
+            shortest_line = shapely.shortest_line(a=point_proj, b=way_geom)
+            return pd.Series({
+                "distance": shapely.length(shortest_line),
+                "matched_point": shapely.Point(shortest_line.coords[1])
+            })
+        return matched_ways.join(
+            matched_ways["geometry"].apply(get_match_geom),
+        )
+
+
+    # Example
+    point_1 = track_proj.iloc[0].geometry
+    matched_ways_1 = get_ways_for_point(point_1, 30)
+    matched_ways_1
+    return matched_ways_1, point_1
+
+
 if __name__ == "__main__":
     app.run()
