@@ -104,13 +104,13 @@ def _(bike_filter):
         ),
         edge_attrs_differ=["osmid"],
     )
-    bike_network_undirected = ox.convert.to_undirected(bike_network_directed)
-    return bike_network_undirected, ox
+    return bike_network_directed, ox
 
 
 @app.cell
-def _(bike_network_undirected, ox):
-    ways_gdf = ox.convert.graph_to_gdfs(bike_network_undirected, nodes=False)
+def _(bike_network_directed, ox):
+    ways_gdf = ox.convert.graph_to_gdfs(bike_network_directed, nodes=False)
+    ways_gdf = ways_gdf[ways_gdf["reversed"] != True] # Drop duplicate edges that go “backwards” down a two-way street
     ways_gdf["osmid"] = ways_gdf["osmid"].astype(str)
     ways_gdf = ways_gdf.set_index("osmid")
     ways_gdf
