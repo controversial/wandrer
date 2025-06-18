@@ -231,9 +231,10 @@ def _(shapely, track_proj, ways_gdf_proj):
                 "distance": shapely.length(shortest_line),
                 "matched_point": shapely.Point(shortest_line.coords[1])
             })
-        return matched_ways.join(
-            matched_ways["geometry"].apply(get_match_geom),
-        )
+
+        if len(matched_ways):
+            return matched_ways.join(matched_ways["geometry"].apply(get_match_geom))
+        return matched_ways
 
 
     # Example
