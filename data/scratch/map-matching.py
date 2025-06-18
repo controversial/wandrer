@@ -155,6 +155,9 @@ def _():
         entries["lat"] = entries["position_lat"] * (180 / 2**31)
         entries["lng"] = entries["position_long"] * (180 / 2**31)
 
+        # TODO: convert timestamp from string to datetime
+        # TODO: sort by timestamp
+
         track = (
             entries.drop(columns=["position_lat", "position_long"])
             .set_geometry(gpd.points_from_xy(entries["lng"], entries["lat"]), crs="wgs84")
@@ -216,7 +219,7 @@ def _(shapely, track_proj, ways_gdf_proj):
 
     def get_ways_for_point(
         point_proj: shapely.Point,
-        radius: int = 20,
+        radius: int,
     ):
         # Find all ways that intersect within radius of point
         matched_ways = ways_gdf_proj.iloc[ways_gdf_proj["geometry"].sindex.query(
@@ -227,21 +230,24 @@ def _(shapely, track_proj, ways_gdf_proj):
         # compute distance to each
         def get_match_geom(way_geom):
             shortest_line = shapely.shortest_line(a=point_proj, b=way_geom)
+            matched_point = shapely.Point(shortest_line.coords[1])
             return pd.Series({
-                "distance": shapely.length(shortest_line),
-                "matched_point": shapely.Point(shortest_line.coords[1])
+                "matched_point": matched_point,
+                "distance_from_search": shapely.length(shortest_line),
+                "distance_along_way": shapely.line_locate_point(way_geom, matched_point, normalized=True)
             })
 
+    
         if len(matched_ways):
             return matched_ways.join(matched_ways["geometry"].apply(get_match_geom))
         return matched_ways
 
 
     # Example
-    point_1 = track_proj.iloc[0].geometry
+    point_1 = track_proj.iloc[0]["geometry"]
     matched_ways_1 = get_ways_for_point(point_1, 30)
     matched_ways_1
-    return matched_ways_1, point_1
+    return get_ways_for_point, matched_ways_1, point_1
 
 
 @app.cell
@@ -268,6 +274,54 @@ def _(
     matched_ways_map.add_gdf(matched_ways_1[["geometry"]])
 
     matched_ways_map
+    return
+
+
+@app.cell
+def _(get_ways_for_point, track_proj):
+    # At every point on the graph there are one or more possible “matches”
+    #   - the closest point along zero or more matched ways
+    #   - the track point itself, ie no match at all—“leaving” the street network.
+
+    WAY_SEARCH_DISTANCE = 50  # meters
+
+    nodes_for_track_points = {
+        # track_point_index -> [
+        #   { "point": POINT(x, y), "way": way_id, "distance_from_track": d },
+        #   { "point": POINT(x, y), "way": None, "distance_from_track": 0 },
+        # ]
+    }
+
+
+    for idx, track_entry in track_proj.iterrows():
+        nodes_here = []
+
+        # the track point itself, “free” (unconstrained) from the street network—
+        # this means “leaving” the street network
+        # this is needed, for example, to accurately match routes that “cut across”
+        nodes_here.append({
+            "point": track_entry["geometry"],
+            "way": None,
+            "distance_from_track": 0,
+        })
+
+        # candidate points on the street network
+        for (osmid, match) in get_ways_for_point(track_entry["geometry"], WAY_SEARCH_DISTANCE).iterrows():
+            nodes_here.append({
+                "point": match["matched_point"],
+                "way": osmid,
+                "way_position": match["distance_along_way"],
+                "distance_from_track": match["distance_from_search"],
+            })
+
+        nodes_for_track_points[idx] = nodes_here
+
+    # sample: first 10 entries
+    for i, (k, v) in enumerate(nodes_for_track_points.items()):
+        if i >= 20: break
+        print(f"{k}:")
+        for node in v:
+            print("  -", node)
     return
 
 
