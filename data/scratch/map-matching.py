@@ -109,23 +109,22 @@ def _(bike_filter):
 
 @app.cell
 def _(bike_network_directed, ox):
-    ways_gdf = ox.convert.graph_to_gdfs(bike_network_directed, nodes=False)
-    ways_gdf = ways_gdf[ways_gdf["reversed"] != True] # Drop duplicate edges that go “backwards” down a two-way street
-    ways_gdf["osmid"] = ways_gdf["osmid"].astype(str)
-    ways_gdf = ways_gdf.set_index("osmid")
-    ways_gdf
-    return (ways_gdf,)
+    edges_gdf = ox.convert.graph_to_gdfs(bike_network_directed, nodes=False)
+    edges_gdf = edges_gdf[edges_gdf["reversed"] != True] # Drop duplicate edges that go “backwards” down a two-way street
+    edges_gdf["osmid"] = edges_gdf["osmid"].astype(str)
+    edges_gdf
+    return (edges_gdf,)
 
 
 @app.cell
-def _(ways_gdf):
+def _(edges_gdf):
     import leafmap.foliumap as leafmap
 
     network_map = leafmap.Map(tiles="CartoDB.DarkMatter")
     network_map.add_basemap("CartoDB.DarkMatter")
     network_map.add_gdf(
-        ways_gdf.reset_index(),
-        layer_name="Ways",
+        edges_gdf,
+        layer_name="Edges",
         info_mode="on_click",
         style={"color": "#ffffff", "weight": 2, "fill": False, "opacity": 0.5}
     )
@@ -188,7 +187,13 @@ def _(leafmap, track):
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(r"""# 3. Matching GPS track to street network""")
+    mo.md(
+        r"""
+    # 3. Matching GPS track to street network
+    ## 3.1 Projection
+    Start by projecting data into an appropriate UTM CRS in order to work with coordinates that are measured with real-world units (meters) rather than lat/lng degrees
+    """
+    )
     return
 
 
@@ -206,122 +211,129 @@ def _(track):
 
 
 @app.cell
-def _(crs, track, ways_gdf):
-    ways_gdf_proj = ways_gdf.to_crs(crs)
+def _(crs, edges_gdf, track):
+    edges_gdf_proj = edges_gdf.to_crs(crs)
     track_proj = track.to_crs(crs)
-    return track_proj, ways_gdf_proj
+    return edges_gdf_proj, track_proj
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""## 3.2 Snapping points to street network""")
+    return
 
 
 @app.cell
-def _(shapely, track_proj, ways_gdf_proj):
+def _(edges_gdf_proj, shapely, track_proj):
     import pandas as pd
     import numpy as np
 
-    def get_ways_for_point(
+    def get_edges_for_point(
         point_proj: shapely.Point,
         radius: int,
     ):
-        # Find all ways that intersect within radius of point
-        matched_ways = ways_gdf_proj.iloc[ways_gdf_proj["geometry"].sindex.query(
+        # Find all edges that intersect within radius of point
+        matched_edges = edges_gdf_proj.iloc[edges_gdf_proj["geometry"].sindex.query(
             point_proj,
             predicate="dwithin",
             distance=radius,
         )]
         # compute distance to each
-        def get_match_geom(way_geom):
-            shortest_line = shapely.shortest_line(a=point_proj, b=way_geom)
+        def get_match_geom(edge_geom):
+            shortest_line = shapely.shortest_line(a=point_proj, b=edge_geom)
             matched_point = shapely.Point(shortest_line.coords[1])
             return pd.Series({
                 "matched_point": matched_point,
                 "distance_from_search": shapely.length(shortest_line),
-                "distance_along_way": shapely.line_locate_point(way_geom, matched_point, normalized=True)
+                "distance_along_edge": shapely.line_locate_point(edge_geom, matched_point, normalized=True)
             })
 
     
-        if len(matched_ways):
-            return matched_ways.join(matched_ways["geometry"].apply(get_match_geom))
-        return matched_ways
+        if len(matched_edges):
+            return matched_edges.join(matched_edges["geometry"].apply(get_match_geom))
+        return matched_edges
 
 
     # Example
     point_1 = track_proj.iloc[0]["geometry"]
-    matched_ways_1 = get_ways_for_point(point_1, 30)
-    matched_ways_1
-    return get_ways_for_point, matched_ways_1, point_1
+    matched_edges_1 = get_edges_for_point(point_1, 30)
+    matched_edges_1
+    return get_edges_for_point, matched_edges_1, point_1
 
 
 @app.cell
 def _(
     folium,
     leafmap,
-    matched_ways_1,
+    matched_edges_1,
     point_1,
     shapely,
     transformer_to_latlng,
 ):
     # example visualization
-    matched_ways_map = leafmap.Map(tiles="CartoDB.DarkMatter")
+    matched_edges_map = leafmap.Map(tiles="CartoDB.DarkMatter")
     # plot original point
-    matched_ways_map.add_marker(transformer_to_latlng.transform(point_1.x, point_1.y)[::-1])
-    # plot “matched points” on matched ways
-    matched_point_df = matched_ways_1.set_geometry("matched_point", crs=matched_ways_1.crs)[["matched_point"]]
-    matched_ways_map.add_gdf(matched_point_df, marker=folium.CircleMarker(radius=5), style={"color": "red"})
+    matched_edges_map.add_marker(transformer_to_latlng.transform(point_1.x, point_1.y)[::-1])
+    # plot “matched points” on matched edges
+    matched_point_df = matched_edges_1.set_geometry("matched_point", crs=matched_edges_1.crs)[["matched_point"]]
+    matched_edges_map.add_gdf(matched_point_df, marker=folium.CircleMarker(radius=5), style={"color": "red"})
     # plot dotted lines between original point and matched points
-    matched_ways_map.add_gdf(
+    matched_edges_map.add_gdf(
         matched_point_df["matched_point"].apply(lambda point_2: shapely.LineString([point_1, point_2])).to_frame(),
         style={ "color": "red", "dashArray": "5" }
     )
-    matched_ways_map.add_gdf(matched_ways_1[["geometry"]])
+    matched_edges_map.add_gdf(matched_edges_1[["geometry"]])
 
-    matched_ways_map
+    matched_edges_map
     return
 
 
 @app.cell
-def _(get_ways_for_point, track_proj):
+def _(get_edges_for_point, track_proj):
     # At every point on the graph there are one or more possible “matches”
-    #   - the closest point along zero or more matched ways
+    #   - the closest point along zero or more matched edges
     #   - the track point itself, ie no match at all—“leaving” the street network.
 
-    WAY_SEARCH_DISTANCE = 50  # meters
+    EDGE_SEARCH_DISTANCE = 50  # meters
 
     nodes_for_track_points = {
         # track_point_index -> [
-        #   { "point": POINT(x, y), "way": way_id, "distance_from_track": d },
-        #   { "point": POINT(x, y), "way": None, "distance_from_track": 0 },
+        #   { "point": POINT(x, y), "edge": (u,v,key), "distance_from_track": d },
+        #   { "point": POINT(x, y), "edge": None, "distance_from_track": 0 },
         # ]
     }
 
 
-    for idx, track_entry in track_proj.iterrows():
+    for _idx, _track_entry in track_proj.iterrows():
         nodes_here = []
 
         # the track point itself, “free” (unconstrained) from the street network—
         # this means “leaving” the street network
         # this is needed, for example, to accurately match routes that “cut across”
         nodes_here.append({
-            "point": track_entry["geometry"],
-            "way": None,
+            "point": _track_entry["geometry"],
+            "edge": None,
             "distance_from_track": 0,
         })
 
         # candidate points on the street network
-        for (osmid, match) in get_ways_for_point(track_entry["geometry"], WAY_SEARCH_DISTANCE).iterrows():
+        for (_uvk, _match) in get_edges_for_point(_track_entry["geometry"], EDGE_SEARCH_DISTANCE).iterrows():
             nodes_here.append({
-                "point": match["matched_point"],
-                "way": osmid,
-                "way_position": match["distance_along_way"],
-                "distance_from_track": match["distance_from_search"],
+                "point": _match["matched_point"],
+                "edge": _uvk,
+                "osmid": _match["osmid"],
+                "edge_position": _match["distance_along_edge"],
+                "distance_from_track": _match["distance_from_search"],
             })
 
-        nodes_for_track_points[idx] = nodes_here
+        nodes_for_track_points[_idx] = nodes_here
 
     # sample: first 10 entries
-    for i, (k, v) in enumerate(nodes_for_track_points.items()):
-        if i >= 20: break
-        print(f"{k}:")
-        for node in v:
-            print("  -", node)
+    for _i, (_k, _v) in enumerate(nodes_for_track_points.items()):
+        if _i >= 20: break
+        print(f"{_k}:")
+        for _node in _v:
+            print("  -", _node)
     return
 
 
