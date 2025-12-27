@@ -1,6 +1,7 @@
 /* eslint-disable @stylistic/no-multi-spaces, @stylistic/max-len */
 
 // Core
+import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
 import js from '@eslint/js';
@@ -15,7 +16,7 @@ import importConfig from './import.js';
 import path from 'node:path';
 
 
-export default tseslint.config(
+export default defineConfig(
   // base settings
   { ignores: ['**/node_modules/**', '**/generated/**', '**/dist/**', '**/.next/**', '**/rendered/**', '**/.vercel/**'] },
   {
@@ -117,7 +118,6 @@ export default tseslint.config(
       parserOptions: {
         projectService: true,
         tsconfigRootDir: path.dirname(import.meta.dirname),
-        project: ['./tsconfig.json'],
       },
     },
 

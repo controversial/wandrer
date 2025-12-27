@@ -1,14 +1,16 @@
-import tseslint from 'typescript-eslint';
+import { defineConfig } from 'eslint/config';
 
 import pluginImportX from 'eslint-plugin-import-x';
 
-
 const extensions = ['.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx'];
 
-export default tseslint.config(
+export default defineConfig(
   {
     name: 'import-x/recommended (recreated)',
-    plugins: { import: pluginImportX },
+    plugins: {
+      // @ts-expect-error https://github.com/typescript-eslint/typescript-eslint/issues/11543
+      import: pluginImportX,
+    },
     rules: {
       // recommended
       'import/no-unresolved': 'error',

@@ -1,20 +1,18 @@
-import tseslint from 'typescript-eslint';
+import { defineConfig } from 'eslint/config';
 
 import pluginReact from 'eslint-plugin-react';
 import pluginJsxA11y from 'eslint-plugin-jsx-a11y';
 import pluginReactHooks from 'eslint-plugin-react-hooks';
-import * as pluginCompiler from 'eslint-plugin-react-compiler';
 
 
-export default tseslint.config(
+export default defineConfig(
   {
     name: 'Loading React plugins',
 
     plugins: {
       'jsx-a11y': pluginJsxA11y,
       react: pluginReact,
-      'react-hooks': pluginReactHooks,
-      'react-compiler': pluginCompiler,
+      'react-hooks': { rules: pluginReactHooks.rules },
     },
   },
 
@@ -32,13 +30,8 @@ export default tseslint.config(
 
   {
     name: 'react-hooks/recommended',
-    rules: { ...pluginReactHooks.configs['recommended-latest'].rules },
-  },
-
-  {
-    name: 'react-compiler/recommended',
     rules: {
-      'react-compiler/react-compiler': 'error',
+      ...pluginReactHooks.configs['recommended-latest'].rules,
     },
   },
 );

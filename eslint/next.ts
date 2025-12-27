@@ -1,11 +1,11 @@
-import tseslint from 'typescript-eslint';
+import { defineConfig } from 'eslint/config';
 import { fixupPluginRules } from '@eslint/compat';
 import globals from 'globals';
 
 import nextPlugin from '@next/eslint-plugin-next';
 
 
-export default tseslint.config({
+export default defineConfig({
   name: 'eslint-config-next (recreated)',
 
   plugins: {

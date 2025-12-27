@@ -1,7 +1,8 @@
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 
-import tseslint from 'typescript-eslint';
+import { defineConfig } from 'eslint/config';
+import tseslint, { type FlatConfig } from 'typescript-eslint';
 import stylisticPlugin from '@stylistic/eslint-plugin';
 
 
@@ -30,14 +31,14 @@ const stylisticPatchedRules = {
 
 // 2. For typescript config, replace rules that have a typescript-eslint version
 const ruleEntriesWithTsEslintVersion = baseRuleEntries
-  .filter(([rule]) => rule in (tseslint.plugin.rules ?? {}));
+  .filter(([rule]) => rule in ((tseslint.plugin as FlatConfig.Plugin).rules ?? {}));
 const typescriptPatchedRules = Object.fromEntries([
   ...ruleEntriesWithTsEslintVersion.map(([rule]) => [rule, 'off'] as const),
   ...ruleEntriesWithTsEslintVersion.map(([rule, setting]) => [`@typescript-eslint/${rule}`, setting] as const),
 ]);
 
 
-export default tseslint.config(
+export default defineConfig(
   // Base rules - patched to use stylistic plugin
   {
     plugins: { '@stylistic': stylisticPlugin },

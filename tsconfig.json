@@ -6,9 +6,9 @@
     "libReplacement": false,
     "plugins": [{ "name": "next" }],
 
-    "module": "esnext",
+    "module": "preserve",
     "moduleResolution": "bundler",
-    // TODO: change the above to just "module": "preserve" once nextjs allows
+
     "moduleDetection": "force",
     "isolatedModules": true,
     "esModuleInterop": true,
@@ -23,10 +23,7 @@
     "noEmit": true,
     "jsx": "preserve",
     "incremental": true,
-
-    "baseUrl": "./src",
   },
 
-  "include": ["**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["**/node_modules"]
+  "include": ["**/*.ts", "**/*.tsx"]
 }

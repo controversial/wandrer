@@ -1,9 +1,9 @@
 /* eslint-disable @stylistic/no-multi-spaces */
 
-import tseslint from 'typescript-eslint';
+import { defineConfig } from 'eslint/config';
 
 
-export default tseslint.config(
+export default defineConfig(
   {
     name: 'React stylistic',
     rules: {
