@@ -1,32 +1,18 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
+    "typecheck": "tsc",
+    "lint": "eslint ./*.ts"
   },
   "workspaces": [
-    "eslint"
+    "eslint",
+    "services/*"
   ],
-  "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.29.1-dev132.0",
-    "@upstash/redis": "^1.34.9",
-    "apache-arrow": "^19.0.1",
-    "classnames": "^2.5.1",
-    "leva": "^0.10.0",
-    "mapbox-gl": "^3.11.1",
-    "mitt": "^3.0.1",
-    "next": "^15.4.0-canary.26",
-    "pbf": "^4.0.1",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "sass-embedded": "^1.87.0",
-    "temporal-polyfill": "^0.3.0"
-  },
   "devDependencies": {
+    "@luke/eslint-config": "workspace:",
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/node": "^24.10.3",
+    "eslint": "^9.39.2",
     "typescript": "^5.9.3"
   },
   "overrides": {

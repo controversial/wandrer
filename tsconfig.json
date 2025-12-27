@@ -4,7 +4,6 @@
 
     "lib": ["esnext", "dom", "dom.iterable"],
     "libReplacement": false,
-    "plugins": [{ "name": "next" }],
 
     "module": "preserve",
     "moduleResolution": "bundler",
@@ -25,5 +24,6 @@
     "incremental": true,
   },
 
-  "include": ["**/*.ts", "**/*.tsx"]
+  "include": ["./*.ts", "eslint/global.d.ts"],
+  "exclude": ["node_modules"]
 }

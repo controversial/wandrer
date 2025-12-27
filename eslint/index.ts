@@ -1,7 +1,7 @@
 /* eslint-disable @stylistic/no-multi-spaces, @stylistic/max-len */
 
 // Core
-import { defineConfig } from 'eslint/config';
+import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
 import js from '@eslint/js';
@@ -18,7 +18,8 @@ import path from 'node:path';
 
 export default defineConfig(
   // base settings
-  { ignores: ['**/node_modules/**', '**/generated/**', '**/dist/**', '**/.next/**', '**/rendered/**', '**/.vercel/**'] },
+  globalIgnores(['**/node_modules/**', '**/generated/**', '**/dist/**', '**/.next/**', '**/rendered/**', '**/.vercel/**']),
+
   {
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
