@@ -81,7 +81,7 @@ export default defineConfig(
       // use default arguments instead of defaultProps for function components
       'react/require-default-props': [
         'error',
-        { forbidDefaultForRequired: true, classes: 'defaultProps', functions: 'defaultArguments' },
+        { forbidDefaultForRequired: true, classes: 'defaultProps', functions: 'ignore' },
       ],
       'no-restricted-syntax': [
         'error',

@@ -25,8 +25,8 @@ const url = (partial: string) => {
 export default function MapboxMap({
   sources = [],
   layers = [],
-  onData = undefined,
-  ref = undefined,
+  onData,
+  ref,
 }: {
   sources?: ({ id: string } & SourceSpecification)[];
   layers?: LayerSpecification[];
