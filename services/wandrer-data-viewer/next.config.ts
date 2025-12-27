@@ -10,11 +10,4 @@ export default {
       path.join(__dirname, 'node_modules/'),
     ],
   },
-
-  experimental: {
-    webpackBuildWorker: true,
-    parallelServerCompiles: true,
-    parallelServerBuildTraces: true,
-    webpackMemoryOptimizations: true,
-  },
 } satisfies NextConfig;
