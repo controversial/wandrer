@@ -1,6 +1,6 @@
 import { defineConfig } from 'eslint/config';
 
-import pluginReact from 'eslint-plugin-react';
+import pluginReact from '@eslint-react/eslint-plugin';
 import pluginJsxA11y from 'eslint-plugin-jsx-a11y';
 import pluginReactHooks from 'eslint-plugin-react-hooks';
 
@@ -11,17 +11,11 @@ export default defineConfig(
 
     plugins: {
       'jsx-a11y': pluginJsxA11y,
-      react: pluginReact,
       'react-hooks': { rules: pluginReactHooks.rules },
     },
   },
 
-  {
-    ...(
-      pluginReact.configs.flat.recommended ?? (() => { throw new Error('can’t find config `react/recommended`'); })()
-    ),
-    name: 'react/recommended',
-  },
+  pluginReact.configs['strict-type-checked'],
 
   {
     name: 'jsx-a11y/recommended',
