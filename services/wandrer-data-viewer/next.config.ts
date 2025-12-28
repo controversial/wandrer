@@ -3,6 +3,8 @@ import path from 'node:path';
 
 export default {
   reactStrictMode: true,
+  reactCompiler: true,
+
   sassOptions: {
     implementation: 'sass-embedded',
     loadPaths: [
