@@ -21,5 +21,5 @@ export async function GET(
 }
 
 export const dynamic = 'force-static';
-export async function generateStaticParams() { return []; }
+export function generateStaticParams() { return Promise.resolve([]); }
 export const revalidate = 3600; // 1 hour

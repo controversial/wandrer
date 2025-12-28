@@ -1,6 +1,7 @@
 import Pbf from 'pbf';
 
 function readTileDataInner(pbf: Pbf, end: number) {
+  /* eslint-disable no-param-reassign */
   return pbf.readFields((tag, result) => {
     switch (tag) {
       case 1:
