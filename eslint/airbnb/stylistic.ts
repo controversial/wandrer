@@ -1,9 +1,9 @@
 import { defineConfig } from 'eslint/config';
-import stylistic from '@stylistic/eslint-plugin'
+import stylistic from '@stylistic/eslint-plugin';
 
 export default defineConfig({
   plugins: {
-    '@stylistic': stylistic
+    '@stylistic': stylistic,
   },
 
   rules: {
@@ -11,7 +11,7 @@ export default defineConfig({
     camelcase: ['error', { properties: 'never', ignoreDestructuring: false }],
     'func-names': 'warn',
     'new-cap': ['error', { newIsCap: true, newIsCapExceptions: [], capIsNew: false, capIsNewExceptions: ['Immutable.Map', 'Immutable.Set', 'Immutable.List'] }],
-    'no-array-constructor': 'error',
+    '@typescript-eslint/no-array-constructor': 'error',
     'no-bitwise': 'error',
     'no-continue': 'error',
     'no-lonely-if': 'error',

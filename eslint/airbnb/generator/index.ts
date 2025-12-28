@@ -1,6 +1,8 @@
 /**
  * Generate & print modernized versions of each airbnb subconfig
+ * - Moves compatible rules to typescript-eslint
  * - Comments rules that moved to stylistic plugin
+ *   - new section holds all of the migrated rules
  * - Comments out rules that already come from js.configs.recommended
  * - Comments rules that are set to “off”
  * - Comments rules that are deprecated
@@ -11,6 +13,7 @@ import { styleText } from 'node:util';
 import eslintUnsafe from 'eslint/use-at-your-own-risk';
 
 import stylisticPlugin from '@stylistic/eslint-plugin';
+import tseslint, { type FlatConfig } from 'typescript-eslint';
 
 // Load airbnb config as FlatConfig
 const compat = new FlatCompat({
@@ -25,21 +28,33 @@ const airbnbFlat = compat.extends('eslint-config-airbnb');
 function isOff(setting: typeof js.configs.recommended.rules[string] | undefined) {
   return setting === undefined || setting === 'off' || setting === 0 || (Array.isArray(setting) && (setting[0] === 'off' || setting[0] === 0));
 }
+const tseslintRecommendedRules = tseslint.configs.recommended.reduce<
+  typeof js.configs.recommended.rules
+>((acc, cfg) => {
+  if (cfg.rules) return { ...acc, ...cfg.rules };
+  return acc;
+}, {});
 
 airbnbFlat.forEach((cfg, i) => {
   if (!cfg.rules) return;
-  console.log(styleText('cyan', `\n\nConfig #${i} from airbnb:`));
+  console.log(styleText('cyan', `\n\nConfig #${i + 1} from airbnb:`));
   const entries = Object.entries(cfg.rules);
   entries.forEach(([rule, setting]) => {
     const tail = rule.split('/').at(-1);
+
+    const hasTypescriptVersion = rule in ((tseslint.plugin as FlatConfig.Plugin).rules ?? {});
+    const ruleNameToPrint = hasTypescriptVersion ? `@typescript-eslint/${rule}` : rule;
 
     const hasStylisticVersion = !!tail && tail in stylisticPlugin.rules;
     const ruleIsOff = isOff(setting);
     // eslint-disable-next-line @typescript-eslint/no-deprecated
     const isDeprecated = eslintUnsafe.builtinRules.get(rule)?.meta?.deprecated ?? false;
-    const inRecommended = !isOff(js.configs.recommended.rules[rule]);
+    const recommendedSetting = hasTypescriptVersion
+      ? tseslintRecommendedRules[ruleNameToPrint]
+      : js.configs.recommended.rules[rule];
+    const inRecommended = !isOff(recommendedSetting);
     const divergesFromRecommended = inRecommended
-      && JSON.stringify(setting) !== JSON.stringify(js.configs.recommended.rules[rule]);
+      && JSON.stringify(setting) !== JSON.stringify(recommendedSetting);
 
     const problems = [
       hasStylisticVersion && '[stylistic]',
@@ -54,7 +69,7 @@ airbnbFlat.forEach((cfg, i) => {
         [
           `    // Different settings for rule ${rule} in airbnb vs recommended:`,
           `    //   Airbnb => ${JSON.stringify(setting)}`,
-          `    //   Recommended => ${JSON.stringify(js.configs.recommended.rules[rule])}`,
+          `    //   Recommended => ${JSON.stringify(recommendedSetting)}`,
         ].join('\n'),
       ));
     }
@@ -62,7 +77,7 @@ airbnbFlat.forEach((cfg, i) => {
     console.log(
       '  ',
       problems ? styleText('red', ` // ${problems}`) : '',
-      `'${rule}': ${JSON.stringify(setting)},`,
+      `'${ruleNameToPrint}': ${JSON.stringify(setting)},`,
     );
   });
 });

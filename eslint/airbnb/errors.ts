@@ -17,6 +17,7 @@ export default defineConfig({
     //   Recommended => "error"
     'no-constant-condition': 'warn',
     'no-inner-declarations': 'error',
+    '@typescript-eslint/no-loss-of-precision': 'error',
     'no-promise-executor-return': 'error',
     'no-template-curly-in-string': 'error',
     'no-unreachable-loop': ['error', { ignore: [] }],
@@ -24,10 +25,6 @@ export default defineConfig({
     //   Airbnb => ["error",{"disallowArithmeticOperators":true}]
     //   Recommended => "error"
     'no-unsafe-optional-chaining': ['error', { disallowArithmeticOperators: true }],
-    // Different settings for rule no-unused-private-class-members in airbnb vs recommended:
-    //   Airbnb => "off"
-    //   Recommended => "error"
-    'no-unused-private-class-members': 'off',
     // Different settings for rule valid-typeof in airbnb vs recommended:
     //   Airbnb => ["error",{"requireStringLiterals":true}]
     //   Recommended => "error"
