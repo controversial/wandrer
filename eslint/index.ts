@@ -7,7 +7,7 @@ import globals from 'globals';
 import js from '@eslint/js';
 
 // Configs
-import airbnbConfig from './airbnb.js';
+import airbnbConfig from './airbnb/index.js';
 import eslintConfigNext from './next.js';
 import reactConfig from './react.js';
 import jsxStylisticConfig from './jsx-stylistic.js';
