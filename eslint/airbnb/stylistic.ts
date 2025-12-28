@@ -1,6 +1,11 @@
 import { defineConfig } from 'eslint/config';
+import stylistic from '@stylistic/eslint-plugin'
 
 export default defineConfig({
+  plugins: {
+    '@stylistic': stylistic
+  },
+
   rules: {
     // non @stylistic rules from airbnb/style.js
     camelcase: ['error', { properties: 'never', ignoreDestructuring: false }],
